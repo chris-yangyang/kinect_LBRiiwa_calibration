@@ -6,6 +6,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp geometry_msgs cv_bridge image_tra
 find_package(OpenCV REQUIRED)
 find_package(VISP REQUIRED)
 
+catkin_package()
+
 include_directories(
 include 
 ${catkin_INCLUDE_DIRS}
@@ -14,13 +16,13 @@ ${OpenCV_INCLUDE_DIRS}
 include_directories(${VISP_INCLUDE_DIRS})
 
 ## Declare a C++ executable
-add_executable(iiwa_kinect_calibration src/calibrator.cpp)
+add_executable(chris_calibrator src/calibrator.cpp)
 
 ## Specify libraries to link a library or executable target against
-target_link_libraries(iiwa_kinect_calibration
+target_link_libraries(chris_calibrator
   ${catkin_LIBRARIES}
   ${OpenCV_LIBRARIES}
 )
-target_link_libraries(iiwa_kinect_calibration ${VISP_LIBRARIES})
+target_link_libraries(chris_calibrator ${VISP_LIBRARIES})
 
-target_link_libraries(iiwa_kinect_calibration lapack blas)
+target_link_libraries(chris_calibrator lapack blas)
