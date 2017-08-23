@@ -83,7 +83,7 @@ string double2str(double d)
 string constructCorrsPtsStr(cv::Point3d kinectPoint, cv::Point3d robotPoint, std::vector<double> poseMarker, std::vector<double> poseRobot)
 {
   return double2str(kinectPoint.x)+","+double2str(kinectPoint.y)+","+double2str(kinectPoint.z)+","+
-         double2str(poseMarker[0])+","+double2str(poseMarker[1])+","+double2str(poseMarker[2])+","+double2str(poseMarker[3])+";"+
+         double2str(poseMarker[0])+","+double2str(poseMarker[1])+","+double2str(poseMarker[2])+","+double2str(poseMarker[3])+","+
          double2str(robotPoint.x)+","+double2str(robotPoint.y)+","+double2str(robotPoint.z)+","+
 	double2str(poseRobot[0])+","+double2str(poseRobot[1])+","+double2str(poseRobot[2])+","+double2str(poseRobot[3])+
 	"\r\n";
@@ -326,9 +326,9 @@ int main(int argc, char **argv )
 	      corrsPts.data.push_back(pose_marker[m][2]);
 	      corrsPts.data.push_back(pose_marker[m][3]);
 	      
-	      corrsPts.data.push_back(pts_robot[m].x);
-	      corrsPts.data.push_back(pts_robot[m].y);
-	      corrsPts.data.push_back(pts_robot[m].z);
+	      corrsPts.data.push_back(pts_robot[m].x/1000);
+	      corrsPts.data.push_back(pts_robot[m].y/1000);
+	      corrsPts.data.push_back(pts_robot[m].z/1000);
 	      corrsPts.data.push_back(pose_robot[m][0]);
 	      corrsPts.data.push_back(pose_robot[m][1]);
 	      corrsPts.data.push_back(pose_robot[m][2]);
