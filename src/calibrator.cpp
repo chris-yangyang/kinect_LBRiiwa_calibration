@@ -55,6 +55,11 @@ enum { max_length = 1024 };
 
 using namespace std;
 
+boost::asio::io_service io_service;
+
+udp::socket s(io_service, udp::endpoint(udp::v4(), 0));
+ros::Publisher pubTask;
+
 std::vector<cv::Point3d> pts_marker;
 std::vector<cv::Point3d> pts_robot;
 std::vector< std::vector<double> > pose_marker;
@@ -199,7 +204,7 @@ void resolvRobotPosition()
     std::cout << "msg received:  "+inStr<<endl;
     if (packageValid(inStr))//get the robot position
     {
-        int endIndex=str.find("@l@");
+        int endIndex=inStr.find("@l@");
         string strTemp=inStr.substr(0,endIndex);
         //split string to doubles
         //cout<<strTemp<<endl;
@@ -224,11 +229,38 @@ void resolvRobotPosition()
 //"[0.53196,1.39524,1.09715,0.955755,-4.0458,-1.292023,-0.000904]"
 //"[0.1037,1.167,1.3004,1.27976,-4.7181,-1.54276,-0.0039043]"
 
+void publish_ctPoints()
+{
+  size_t cptsNumber=pts_robot.size();
+  cout<<"publish correspondent point topic: /chris/control_pts"<<endl;
+  std_msgs::Float64MultiArray corrsPts;
+
+  for(int m=0;m<cptsNumber;m++)
+  {
+    corrsPts.data.push_back(pts_marker[m].x);
+    corrsPts.data.push_back(pts_marker[m].y);
+    corrsPts.data.push_back(pts_marker[m].z);
+    corrsPts.data.push_back(pose_marker[m][0]);
+    corrsPts.data.push_back(pose_marker[m][1]);
+    corrsPts.data.push_back(pose_marker[m][2]);
+    corrsPts.data.push_back(pose_marker[m][3]);
+
+    corrsPts.data.push_back(pts_robot[m].x);
+    corrsPts.data.push_back(pts_robot[m].y);
+    corrsPts.data.push_back(pts_robot[m].z);
+    
+    corrsPts.data.push_back(pose_robot[m][0]);
+    corrsPts.data.push_back(pose_robot[m][1]);
+    corrsPts.data.push_back(pose_robot[m][2]);
+    corrsPts.data.push_back(pose_robot[m][3]);
+  }
+  pubTask.publish(corrsPts);
+  ROS_INFO("control points coordinates published!");
+}
+
 int main(int argc, char **argv )
 {
-  boost::asio::io_service io_service;
-
-    udp::socket s(io_service, udp::endpoint(udp::v4(), 0));
+  
 
     udp::resolver resolver(io_service);
     udp::resolver::query query(udp::v4(), UDP_SERVER_IP , PORT);
@@ -241,7 +273,7 @@ int main(int argc, char **argv )
     ros::Subscriber sub = nh.subscribe("/ar_pose_marker", 1000, ar_pose_marker_callback);
     //ros::Subscriber subP = nh.subscribe("/chris_tracker/currentPoint", 1000, currentPointCallback);
     //ros::Subscriber subPd = nh.subscribe("/chris_tracker/desiredPoint", 1000, desiredPointCallback);
-    ros::Publisher pubTask = nh.advertise<std_msgs::Float64MultiArray>("/chris/controlPoints", 1, true);
+    pubTask = nh.advertise<std_msgs::Float64MultiArray>("/chris/controlPoints", 1, true);
 
     //ros::ServiceClient Joint_move_client = nh.serviceClient<wam_srvs::JointMove>("/zeus/wam/joint_move");
     cout << "Press any key to continue..." << endl;
@@ -294,28 +326,29 @@ int main(int argc, char **argv )
 	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
 	  }
 
-    if(str.find("move") != std::string::npos)
-    {
-      ros::spinOnce();
-	    if(!markerValid)
-	    {
-	      cout<<"marker detection failed, please check marker position!"<<endl;
-	      continue;
-	    }
-	    //get marker position x, y, z
-      void add_marker_position();
-      //send robot to the position and get robot cartesian coordinates
-      std::string Cmd = str;
-      int myArrayLength=Cmd.size();
-      char myArray[myArrayLength];//as 1 char space for null is not required
-      strcpy(myArray, Cmd.c_str());
-      std::cout << "command: "+ str <<Cmd<<endl;
-      s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
-      std::cout << "move position command sent:  "+ str <<Cmd<<endl;
-      //wait for reply
+	  if(str.find("move") != std::string::npos)
+	  {
+	    ros::spinOnce();
+		  if(!markerValid)
+		  {
+		    cout<<"marker detection failed, please check marker position!"<<endl;
+		    continue;
+		  }
+		  //get marker position x, y, z
+	    add_marker_position();
+	    //send robot to the position and get robot cartesian coordinates
+	    std::string Cmd = str;
+	    int myArrayLength=Cmd.size();
+	    char myArray[myArrayLength];//as 1 char space for null is not required
+	    strcpy(myArray, Cmd.c_str());
+	    std::cout << "command: "+ str <<Cmd<<endl;
+	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
+	    std::cout << "move position command sent:  "+ str <<Cmd<<endl;
+	    //wait for reply
 
-      resolvRobotPosition();
-    }
+	    resolvRobotPosition();
+	    publish_ctPoints();
+	  }
 
 	  if(str.find("mark") != std::string::npos)//mark as one control point
 	  {
@@ -326,20 +359,21 @@ int main(int argc, char **argv )
 	      continue;
 	    }
 	    //get marker position x, y, z
-      void add_marker_position();
+            add_marker_position();
 
 	    //get robot position x,y,z
 	    std::string getRobotCartPositionCmd = "get_Cart_Position@l@";
 	    int myArrayLength=getRobotCartPositionCmd.size();
-      char myArray[myArrayLength];//as 1 char space for null is also required
-      strcpy(myArray, getRobotCartPositionCmd.c_str());
+	    char myArray[myArrayLength];//as 1 char space for null is also required
+	    strcpy(myArray, getRobotCartPositionCmd.c_str());
 	    std::cout << "get robot position:  "<<getRobotCartPositionCmd<<endl;
 
 	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
 
 	    std::cout<<"get robot position cmd sent!"<<endl;
 	    //receive position from robot
-      resolvRobotPosition();
+	    resolvRobotPosition();
+	    publish_ctPoints();
 	  }
 
 	  if(str.find("done") != std::string::npos)//mark as one control point
@@ -357,29 +391,9 @@ int main(int argc, char **argv )
 	    for(int m=0;m<cptsNumber;m++)
 	      file<<constructCorrsPtsStr(pts_marker[m],pts_robot[m], pose_marker[m], pose_robot[m]);
 	    file.close();
-	    cout<<"publish correspondent point topic: /chris/control_pts"<<endl;
-	    std_msgs::Float64MultiArray corrsPts;
-
-	    for(int m=0;m<cptsNumber;m++)
-	    {
-	      corrsPts.data.push_back(pts_marker[m].x);
-	      corrsPts.data.push_back(pts_marker[m].y);
-	      corrsPts.data.push_back(pts_marker[m].z);
-	      corrsPts.data.push_back(pose_marker[m][0]);
-	      corrsPts.data.push_back(pose_marker[m][1]);
-	      corrsPts.data.push_back(pose_marker[m][2]);
-	      corrsPts.data.push_back(pose_marker[m][3]);
-
-	      corrsPts.data.push_back(pts_robot[m].x);
-	      corrsPts.data.push_back(pts_robot[m].y);
-0	      corrsPts.data.push_back(pts_robot[m].z);
-	      corrsPts.data.push_back(pose_robot[m][0]);
-	      corrsPts.data.push_back(pose_robot[m][1]);
-	      corrsPts.data.push_back(pose_robot[m][2]);
-	      corrsPts.data.push_back(pose_robot[m][3]);
-	    }
-	    pubTask.publish(corrsPts);
-	    ROS_INFO("control points coordinates published!");
+	    
+	    publish_ctPoints();
+	    	    
 	    pts_robot.clear();
 	    pts_marker.clear();
 	    pose_marker.clear();
