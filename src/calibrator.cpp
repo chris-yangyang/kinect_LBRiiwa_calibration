@@ -222,7 +222,7 @@ void resolvRobotPosition()
         cout<<"robot position:"<<currentRobot<<endl;
         cout<<"robot pose:";
         printOutStdVector(currentRobotPose);
-        cout<<"control point pairs number:"<<pts_marker.size()<<endl;
+        
     }
   }
 }
@@ -328,14 +328,8 @@ int main(int argc, char **argv )
 
 	  if(str.find("move") != std::string::npos)
 	  {
-	    ros::spinOnce();
-		  if(!markerValid)
-		  {
-		    cout<<"marker detection failed, please check marker position!"<<endl;
-		    continue;
-		  }
-		  //get marker position x, y, z
-	    add_marker_position();
+	    //get marker position x, y, z
+	    
 	    //send robot to the position and get robot cartesian coordinates
 	    std::string Cmd = str;
 	    int myArrayLength=Cmd.size();
@@ -345,8 +339,21 @@ int main(int argc, char **argv )
 	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
 	    std::cout << "move position command sent:  "+ str <<Cmd<<endl;
 	    //wait for reply
-
+            
 	    resolvRobotPosition();
+	    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+	    ros::spinOnce();
+	    if(!markerValid)
+	    {
+	      cout<<"marker detection failed, please check marker position!"<<endl;
+	      //clear previous added robot positions
+	      pts_robot.pop_back();
+	      pose_robot.pop_back();
+	      cout<<"current robot position discarded!"<<endl;
+	      continue;
+	    }
+	    add_marker_position();
+	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;  
 	    publish_ctPoints();
 	  }
 
@@ -373,6 +380,7 @@ int main(int argc, char **argv )
 	    std::cout<<"get robot position cmd sent!"<<endl;
 	    //receive position from robot
 	    resolvRobotPosition();
+	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;
 	    publish_ctPoints();
 	  }
 
@@ -407,7 +415,7 @@ int main(int argc, char **argv )
 	    pose_marker.pop_back();
 	    pose_robot.pop_back();
 	    cout<<"this point pair deleted"<<endl;
-	    cout<<"control point pairs number:"<<pts_marker.size()<<endl;
+	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;
 	  }
 
           boost::this_thread::sleep(boost::posix_time::milliseconds(200));
