@@ -46,7 +46,7 @@
 
 #define BUFLEN 1024  //Max length of buffer
 #define PORT "12358"   //The port on which to listen for incoming data
-#define UDP_SERVER_IP "172.31.1.147"//define the udp server ip address  //"127.0.0.1" "172.31.1.147"/
+#define UDP_SERVER_IP "172.31.1.148"//define the udp server ip address  //"127.0.0.1" "172.31.1.147"/
 
 using boost::asio::ip::udp;
 
@@ -222,7 +222,7 @@ void resolvRobotPosition()
         cout<<"robot position:"<<currentRobot<<endl;
         cout<<"robot pose:";
         printOutStdVector(currentRobotPose);
-        
+
     }
   }
 }
@@ -248,7 +248,7 @@ void publish_ctPoints()
     corrsPts.data.push_back(pts_robot[m].x);
     corrsPts.data.push_back(pts_robot[m].y);
     corrsPts.data.push_back(pts_robot[m].z);
-    
+
     corrsPts.data.push_back(pose_robot[m][0]);
     corrsPts.data.push_back(pose_robot[m][1]);
     corrsPts.data.push_back(pose_robot[m][2]);
@@ -260,7 +260,7 @@ void publish_ctPoints()
 
 int main(int argc, char **argv )
 {
-  
+
 
     udp::resolver resolver(io_service);
     udp::resolver::query query(udp::v4(), UDP_SERVER_IP , PORT);
@@ -285,17 +285,55 @@ int main(int argc, char **argv )
     ros::Rate loop_rate(3);//////////////////////////////////////////////////////////////////////////////////////////////////////////////////
     bool done=false;
     cout << "UDP client is trying to connect to ...."<< UDP_SERVER_IP<<":"<<PORT<< endl;
+    bool autoMode=false;
+    vector<string> autoCmds;
+    autoCmds.push_back("1");
+    autoCmds.push_back("2");
+    autoCmds.push_back("3");
+    autoCmds.push_back("4");
+    autoCmds.push_back("5");
+    autoCmds.push_back("6");
+    autoCmds.push_back("7");
+    autoCmds.push_back("8");
+    autoCmds.push_back("9");
+    autoCmds.push_back("10");
+    autoCmds.push_back("11");
+    autoCmds.push_back("12");
+    autoCmds.push_back("13");
+    autoCmds.push_back("14");
+    autoCmds.push_back("15");
+    int autoCMDIndex=0;
+    size_t autoPointNum=autoCmds.size();
+
     while(ros::ok()&&!done)
     {
       ros::spinOnce();
-
+      string str;
        try {
+    if(!autoMode)
+    {
+  	  std::cout << "Enter command: ";
+  	  char request[max_length];
+  	  std::cin.getline(request, max_length);
+  	  size_t request_length = strlen(request);
+  	  string str2(request);
+      str=str2;
+    }
+    else
+    {
+      std::cout << "press any key to continue...press esc to exit..."<<endl;
+  	  char request[max_length];
+  	  std::cin.getline(request, max_length);
+  	  size_t request_length = strlen(request);
+  	  string str2(request);
 
-	  std::cout << "Enter command: ";
-	  char request[max_length];
-	  std::cin.getline(request, max_length);
-	  size_t request_length = strlen(request);
-	  string str(request);
+      str="auto";
+      if(str2.find("esc") != std::string::npos)
+  	  {
+  	    done=true;
+  	    break;
+  	  }
+    }
 	  //std::cout << "you typed:  "+str<<endl;
 
 	  if(str.find("esc") != std::string::npos)
@@ -329,17 +367,17 @@ int main(int argc, char **argv )
 	  if(str.find("move") != std::string::npos)
 	  {
 	    //get marker position x, y, z
-	    
+
 	    //send robot to the position and get robot cartesian coordinates
 	    std::string Cmd = str;
 	    int myArrayLength=Cmd.size();
 	    char myArray[myArrayLength];//as 1 char space for null is not required
 	    strcpy(myArray, Cmd.c_str());
-	    std::cout << "command: "+ str <<Cmd<<endl;
+	    std::cout << "command: "+ str <<" "<<Cmd<<endl;
 	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
 	    std::cout << "move position command sent:  "+ str <<Cmd<<endl;
 	    //wait for reply
-            
+
 	    resolvRobotPosition();
 	    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
 	    ros::spinOnce();
@@ -353,9 +391,68 @@ int main(int argc, char **argv )
 	      continue;
 	    }
 	    add_marker_position();
-	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;  
+	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;
 	    publish_ctPoints();
 	  }
+
+    if(str.find("auto") != std::string::npos && autoCMDIndex<autoPointNum)
+	  {
+      autoMode=true;
+	    //send robot to the position and get robot cartesian coordinates
+	    std::string Cmd = "auto "+autoCmds[autoCMDIndex];
+	    int myArrayLength=Cmd.size();
+	    char myArray[myArrayLength];//as 1 char space for null is not required
+	    strcpy(myArray, Cmd.c_str());
+	    std::cout << "command: "+ str <<Cmd<<endl;
+	    s.send_to(boost::asio::buffer(myArray, myArrayLength), *iterator);
+	    std::cout << "auto position command sent:  "+ str <<" "<<Cmd<<endl;
+	    //wait for reply
+
+	    resolvRobotPosition();
+	    boost::this_thread::sleep(boost::posix_time::milliseconds(1000));
+	    ros::spinOnce();
+      autoCMDIndex++;
+	    if(!markerValid)
+	    {
+	      cout<<"marker detection failed, please check marker position!"<<endl;
+	      //clear previous added robot positions
+	      pts_robot.pop_back();
+	      pose_robot.pop_back();
+	      cout<<"current robot position discarded!"<<endl;
+	      continue;
+	    }
+	    add_marker_position();
+	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;
+	    publish_ctPoints();
+	  }
+    else if(str.find("auto") != std::string::npos && autoCMDIndex>=autoPointNum)  //the end, save the points, reset auto mode.
+    {
+      autoMode=false;
+      autoCMDIndex=0;
+      str="";
+      //do the same as done functions
+      cout<<"-----------------------------------------------"<<endl<<"auto calibration done!"<<endl;
+      //publish control points
+      cout<<"control point pairs number:"<<pts_marker.size()<<endl;
+// 	    cout<<"markers:"<<pts_marker<<endl;
+// 	    cout<<"robots:"<<pts_robot<<endl;
+
+      cout<<"write to file result.txt"<<endl;
+      ofstream file;
+      file.open("result.txt");
+
+      size_t cptsNumber=pts_robot.size();
+      for(int m=0;m<cptsNumber;m++)
+        file<<constructCorrsPtsStr(pts_marker[m],pts_robot[m], pose_marker[m], pose_robot[m]);
+      file.close();
+
+      publish_ctPoints();
+
+      pts_robot.clear();
+      pts_marker.clear();
+      pose_marker.clear();
+      pose_robot.clear();
+    }
 
 	  if(str.find("mark") != std::string::npos)//mark as one control point
 	  {
@@ -387,6 +484,7 @@ int main(int argc, char **argv )
 	  if(str.find("done") != std::string::npos)//mark as one control point
 	  {
 	    //publish control points
+      cout<<"-----------------------------------------------"<<endl<<"calibration done!"<<endl;
 	    cout<<"control point pairs number:"<<pts_marker.size()<<endl;
 // 	    cout<<"markers:"<<pts_marker<<endl;
 // 	    cout<<"robots:"<<pts_robot<<endl;
@@ -399,9 +497,9 @@ int main(int argc, char **argv )
 	    for(int m=0;m<cptsNumber;m++)
 	      file<<constructCorrsPtsStr(pts_marker[m],pts_robot[m], pose_marker[m], pose_robot[m]);
 	    file.close();
-	    
+
 	    publish_ctPoints();
-	    	    
+
 	    pts_robot.clear();
 	    pts_marker.clear();
 	    pose_marker.clear();
