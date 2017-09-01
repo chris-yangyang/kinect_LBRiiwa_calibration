@@ -46,7 +46,7 @@
 
 #define BUFLEN 1024  //Max length of buffer
 #define PORT "12358"   //The port on which to listen for incoming data
-#define UDP_SERVER_IP "172.31.1.148"//define the udp server ip address  //"127.0.0.1" "172.31.1.147"/
+#define UDP_SERVER_IP "172.31.1.147"//define the udp server ip address  //"127.0.0.1" "172.31.1.147"/
 
 using boost::asio::ip::udp;
 
@@ -287,6 +287,7 @@ int main(int argc, char **argv )
     cout << "UDP client is trying to connect to ...."<< UDP_SERVER_IP<<":"<<PORT<< endl;
     bool autoMode=false;
     vector<string> autoCmds;
+    autoCmds.push_back("0");
     autoCmds.push_back("1");
     autoCmds.push_back("2");
     autoCmds.push_back("3");
@@ -302,6 +303,11 @@ int main(int argc, char **argv )
     autoCmds.push_back("13");
     autoCmds.push_back("14");
     autoCmds.push_back("15");
+    autoCmds.push_back("16");
+    autoCmds.push_back("17");
+    autoCmds.push_back("18");
+    autoCmds.push_back("19");
+    autoCmds.push_back("20");
     int autoCMDIndex=0;
     size_t autoPointNum=autoCmds.size();
 
@@ -321,18 +327,18 @@ int main(int argc, char **argv )
     }
     else
     {
-      std::cout << "press any key to continue...press esc to exit..."<<endl;
-  	  char request[max_length];
-  	  std::cin.getline(request, max_length);
-  	  size_t request_length = strlen(request);
-  	  string str2(request);
+      // std::cout << "press any key to continue...press esc to exit..."<<endl;
+  	  // char request[max_length];
+  	  // std::cin.getline(request, max_length);
+  	  // size_t request_length = strlen(request);
+  	  // string str2(request);
+      // if(str2.find("esc") != std::string::npos)
+  	  // {
+  	  //   done=true;
+  	  //   break;
+  	  // }
 
       str="auto";
-      if(str2.find("esc") != std::string::npos)
-  	  {
-  	    done=true;
-  	    break;
-  	  }
     }
 	  //std::cout << "you typed:  "+str<<endl;
 
@@ -398,6 +404,7 @@ int main(int argc, char **argv )
     if(str.find("auto") != std::string::npos && autoCMDIndex<autoPointNum)
 	  {
       autoMode=true;
+      str="auto";
 	    //send robot to the position and get robot cartesian coordinates
 	    std::string Cmd = "auto "+autoCmds[autoCMDIndex];
 	    int myArrayLength=Cmd.size();
