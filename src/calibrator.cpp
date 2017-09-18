@@ -45,7 +45,7 @@
 
 
 #define BUFLEN 1024  //Max length of buffer
-#define PORT "12358"   //The port on which to listen for incoming data
+#define PORT "30003"   //The port on which to listen for incoming data
 #define UDP_SERVER_IP "172.31.1.147"//define the udp server ip address  //"127.0.0.1" "172.31.1.147"/
 
 using boost::asio::ip::udp;
@@ -430,6 +430,8 @@ int main(int argc, char **argv )
 	    }
 	    add_marker_position();
 	    cout<<"control point pairs number:"<<pts_robot.size()<<endl;
+      //write to file in the middle
+    
 	    publish_ctPoints();
 	  }
     else if(str.find("auto") != std::string::npos && autoCMDIndex>=autoPointNum)  //the end, save the points, reset auto mode.
